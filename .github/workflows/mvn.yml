@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-15]
+        os: [ubuntu-24.04, windows-2022, macos-15]
         java: [21]
     steps:
       - uses: actions/checkout@v6
@@ -42,10 +42,6 @@ jobs:
       - shell: bash
         if: always()
         run: |
-          echo "=== TAIL OF MVN LOG ==="
-          tail -120 /tmp/mvn.log
-          echo "=== END ==="
-          # Single annotation with tail of log compressed
           msg=$(tail -100 /tmp/mvn.log | tr -d '\r' | tr '\n' '|' | head -c 4000)
           echo "::error::MVN_TAIL: ${msg}"
       - shell: bash
