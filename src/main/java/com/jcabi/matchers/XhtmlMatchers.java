@@ -36,6 +36,7 @@ import org.w3c.dom.Node;
 @EqualsAndHashCode
 @SuppressWarnings("PMD.ProhibitPublicStaticMethods")
 public final class XhtmlMatchers {
+    // tiny test change
 
     /**
      * Private ctor, it's a utility class.
