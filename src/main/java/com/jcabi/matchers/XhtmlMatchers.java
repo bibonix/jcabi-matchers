@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Scanner;
+import java.util.regex.Pattern;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.transform.Source;
 import lombok.EqualsAndHashCode;
@@ -38,6 +39,14 @@ import org.w3c.dom.Node;
 public final class XhtmlMatchers {
 
     /**
+     * Default-namespace declaration pattern: matches {@code xmlns="..."} or
+     * {@code xmlns='...'} attributes (no prefix), but not {@code xmlns:foo=...}.
+     */
+    private static final Pattern DEFAULT_NS = Pattern.compile(
+        "\\s+xmlns\\s*=\\s*(\"[^\"]*\"|'[^']*')"
+    );
+
+    /**
      * Private ctor, it's a utility class.
      */
     private XhtmlMatchers() {
@@ -60,6 +69,15 @@ public final class XhtmlMatchers {
      * {@link Node} will be printed as a text, etc. The goal is to make any
      * input type presentable as an XML document, as much as it is possible.
      *
+     * <p>For text-based inputs ({@link String}, {@link Reader},
+     * {@link InputStream} and any other object converted via
+     * {@link Object#toString()}), default namespace declarations of the form
+     * {@code xmlns="..."} are stripped out before parsing, so XPath
+     * expressions written without a prefix can match elements that were
+     * declared in a default namespace. Prefixed namespace declarations
+     * ({@code xmlns:foo="..."}) are preserved as-is. Inputs of type
+     * {@link Source} or {@link Node} are not modified.
+     *
      * @param xhtml The source of data
      * @param <T> Type of source
      * @return Renderable source
@@ -71,19 +89,23 @@ public final class XhtmlMatchers {
             source = (Source) xhtml;
         } else if (xhtml instanceof InputStream) {
             source = new StringSource(
-                readAsString(
-                    new InputStreamReader(
-                        (InputStream) xhtml,
-                        StandardCharsets.UTF_8
+                stripDefaultNamespace(
+                    readAsString(
+                        new InputStreamReader(
+                            (InputStream) xhtml,
+                            StandardCharsets.UTF_8
+                        )
                     )
                 )
             );
         } else if (xhtml instanceof Reader) {
-            source = new StringSource(readAsString((Reader) xhtml));
+            source = new StringSource(
+                stripDefaultNamespace(readAsString((Reader) xhtml))
+            );
         } else if (xhtml instanceof Node) {
             source = new StringSource((Node) xhtml);
         } else {
-            source = new StringSource(xhtml.toString());
+            source = new StringSource(stripDefaultNamespace(xhtml.toString()));
         }
         return source;
     }
@@ -155,6 +177,18 @@ public final class XhtmlMatchers {
             list.add(XhtmlMatchers.hasXPath(xpath));
         }
         return new AllOfThatPrintsOnlyWrongMatchers<>(list);
+    }
+
+    /**
+     * Removes default-namespace declarations ({@code xmlns="..."}) from a
+     * piece of XML text so that XPath expressions written without a prefix
+     * can match the elements they describe. Prefixed declarations
+     * ({@code xmlns:foo="..."}) are left untouched.
+     * @param text The XML text
+     * @return XML text with default namespace declarations removed
+     */
+    private static String stripDefaultNamespace(final String text) {
+        return XhtmlMatchers.DEFAULT_NS.matcher(text).replaceAll("");
     }
 
     /**

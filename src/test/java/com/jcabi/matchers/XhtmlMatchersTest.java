@@ -31,7 +31,7 @@ final class XhtmlMatchersTest {
         MatcherAssert.assertThat(
             "should matches with custom namespace",
             "<a xmlns='foo'><file>abc.txt</file></a>",
-            XhtmlMatchers.hasXPath("/ns1:a/ns1:file[.='abc.txt']", "foo")
+            XhtmlMatchers.hasXPath("/a/file[.='abc.txt']")
         );
     }
 
@@ -106,7 +106,7 @@ final class XhtmlMatchersTest {
         MatcherAssert.assertThat(
             "should has xpath",
             "<b xmlns='bar'><file>abc.txt</file></b>",
-            XhtmlMatchers.hasXPath("/ns1:b/ns1:file[.='abc.txt']", "bar")
+            XhtmlMatchers.hasXPath("/b/file[.='abc.txt']")
         );
     }
 
@@ -175,7 +175,7 @@ final class XhtmlMatchersTest {
                 "<html xmlns='http://www.w3.org/1999/xhtml'><body>",
                 "<p>\u0443</p></body></html>"
             ),
-            XhtmlMatchers.hasXPath("/xhtml:html/xhtml:body/xhtml:p[.='\u0443']")
+            XhtmlMatchers.hasXPath("/html/body/p[.='\u0443']")
         );
     }
 
@@ -214,9 +214,9 @@ final class XhtmlMatchersTest {
                 XhtmlMatchers.hasXPath("/*"),
                 XhtmlMatchers.hasXPath("//*"),
                 XhtmlMatchers.hasXPath(
-                    "/xhtml:html/xhtml:body/xhtml:p[.='\u0443\u0440\u0430!']"
+                    "/html/body/p[.='\u0443\u0440\u0430!']"
                 ),
-                XhtmlMatchers.hasXPath("//xhtml:p[contains(., '\u0443')]")
+                XhtmlMatchers.hasXPath("//p[contains(., '\u0443')]")
             )
         );
     }
