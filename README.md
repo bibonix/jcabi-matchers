@@ -71,3 +71,4 @@ mvn clean install -Pqulice
 ```
 
 [blog]: http://www.yegor256.com/2014/04/28/xml-xpath-hamcrest-matchers.html
+
