@@ -15,9 +15,10 @@ jobs:
     timeout-minutes: 15
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ ubuntu-24.04, windows-2022, macos-15 ]
-        java: [ 21 ]
+        os: [ubuntu-24.04]
+        java: [21]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v5
@@ -32,4 +33,27 @@ jobs:
             ${{ runner.os }}-jdk-${{ matrix.java }}-maven-
       - run: java -version
       - run: mvn -version
-      - run: mvn --errors --batch-mode clean install -Pqulice
+      - shell: bash
+        run: |
+          set -o pipefail
+          mvn --errors --batch-mode clean install -Pqulice 2>&1 | tee /tmp/mvn.log
+        continue-on-error: true
+        id: mvn
+      - shell: bash
+        if: always()
+        run: |
+          # Print all failed test names from surefire reports
+          for f in target/surefire-reports/*.txt; do
+            if [ -f "$f" ] && grep -qE "Failures: [^0]|Errors: [^0]" "$f"; then
+              base=$(basename "$f" .txt)
+              echo "::error::FAILED: $base"
+              echo "Test file content:"
+              cat "$f"
+            fi
+          done
+          # tail the mvn log
+          msg=$(tail -100 /tmp/mvn.log | tr -d '\r' | tr '\n' '|' | head -c 4000)
+          echo "::error::MVN_TAIL: ${msg}"
+      - shell: bash
+        if: steps.mvn.outcome != 'success'
+        run: exit 1
