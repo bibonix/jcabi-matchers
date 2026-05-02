@@ -39,23 +39,23 @@ jobs:
           mvn --errors --batch-mode clean install -Pqulice 2>&1 | tee /tmp/mvn.log
         continue-on-error: true
         id: mvn
-      - name: Show outcome
+      - shell: bash
         if: always()
         run: |
-          {
-            echo "## Maven outcome: ${{ steps.mvn.outcome }}"
-            echo ""
-            echo "## Tail of mvn output (300 lines)"
-            echo '```'
-            tail -300 /tmp/mvn.log
-            echo '```'
-            echo "## Surefire reports"
-            for f in target/surefire-reports/*.txt; do
-              if [ -f "$f" ]; then
-                echo "### $f"
-                echo '```'
-                cat "$f"
-                echo '```'
-              fi
-            done
-          } >> $GITHUB_STEP_SUMMARY
+          # Emit annotations for every failure line
+          for f in target/surefire-reports/*.txt; do
+            [ -f "$f" ] || continue
+            base=$(basename "$f")
+            # Only emit if the file shows Failures>0 or Errors>0
+            if grep -qE "Failures: [^0]|Errors: [^0]" "$f"; then
+              while IFS= read -r line; do
+                # Emit a workflow notice line (no newlines allowed in annotations)
+                echo "::error file=$base::${line//$'\n'/ }"
+              done < <(head -200 "$f" | tr '\n' ' ' | head -c 2000; echo "")
+            fi
+          done
+      - shell: bash
+        if: steps.mvn.outcome != 'success'
+        run: |
+          echo "Maven failed; see annotations above"
+          exit 1
