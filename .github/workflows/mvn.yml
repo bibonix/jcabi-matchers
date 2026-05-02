@@ -42,20 +42,12 @@ jobs:
       - shell: bash
         if: always()
         run: |
-          # Emit annotations for every failure line
-          for f in target/surefire-reports/*.txt; do
-            [ -f "$f" ] || continue
-            base=$(basename "$f")
-            # Only emit if the file shows Failures>0 or Errors>0
-            if grep -qE "Failures: [^0]|Errors: [^0]" "$f"; then
-              while IFS= read -r line; do
-                # Emit a workflow notice line (no newlines allowed in annotations)
-                echo "::error file=$base::${line//$'\n'/ }"
-              done < <(head -200 "$f" | tr '\n' ' ' | head -c 2000; echo "")
-            fi
-          done
+          echo "=== TAIL OF MVN LOG ==="
+          tail -120 /tmp/mvn.log
+          echo "=== END ==="
+          # Single annotation with tail of log compressed
+          msg=$(tail -100 /tmp/mvn.log | tr -d '\r' | tr '\n' '|' | head -c 4000)
+          echo "::error::MVN_TAIL: ${msg}"
       - shell: bash
         if: steps.mvn.outcome != 'success'
-        run: |
-          echo "Maven failed; see annotations above"
-          exit 1
+        run: exit 1
