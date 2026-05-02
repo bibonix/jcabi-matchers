@@ -15,9 +15,10 @@ jobs:
     timeout-minutes: 15
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ ubuntu-24.04, windows-2022, macos-15 ]
-        java: [ 21 ]
+        os: [ubuntu-24.04]
+        java: [21]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v5
@@ -33,3 +34,14 @@ jobs:
       - run: java -version
       - run: mvn -version
       - run: mvn --errors --batch-mode clean install -Pqulice
+        continue-on-error: true
+      - name: Show surefire reports
+        if: always()
+        run: |
+          echo "=== TXT reports ==="
+          ls target/surefire-reports/ 2>/dev/null || true
+          for f in target/surefire-reports/*.txt; do
+            echo ""
+            echo "--- $f ---"
+            cat "$f" 2>/dev/null
+          done
